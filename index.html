@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!-- <link rel="stylesheet" href="./viewer/styles.f0604e6743391e0f9dcc.css" /> -->
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>HTML App</title>
+  </head>
+  <!-- <base href="./" /> -->
+<!-- 
+  <script>
+    var global = global || window;
+  </script> -->
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+   <script>
+	  document.addEventListener('DOMContentLoaded', function() {
+		loadViewer();
+	  }, false);
+
+	  var eViewerObj = null;
+	  
+	  function loadViewer() {
+		let jsElement = document.createElement("script");
+		jsElement.type = "application/javascript";
+		jsElement.src = './js/eViewer7_browser.js';
+
+		jsElement.addEventListener('load', function () {
+			let eViewerObj = new eViewerApp();
+			var css = [{ href: './viewer/styles.css' },
+					   { href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css', 
+						 integrity: 'sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=', 
+						 crossorigin: 'anonymous' }
+					  ];
+			var scripts = [
+						  './viewer/runtime.js',
+						  './viewer/polyfills.js',
+						  './viewer/scripts.js',
+						  './viewer/main.js',
+						  './js/events.js',
+						  // './viewer/vendor.js' // only for non prod builds
+			];
+			
+			eViewerObj.loadViewer("viewer", scripts, css).then(() => {
+				setViewerOptions();
+			});		
+		});
+		document.getElementsByTagName("head")[0].appendChild(jsElement);
+	  }
+	  
+      function OnSubmitClick() {
+		if(eViewerObj === null) { 
+			eViewerObj = new eViewerApp();
+		}
+		
+        let myform = document.getElementById("uploadForm");
+        let docUrl = myform.elements["upload"].value;
+		let saveUrl = myform.elements["saveUrl"].value;
+        let serverUrl = myform.elements["serverUrl"].value;
+        let annotationUrl = myform.elements["annotationUrl"].value;
+        let userName = myform.elements["userName"].value;
+		let isEditMode = true;
+		let repoType = "filesystem";
+		let fileName = myform.elements["docName"].value;
+		let password = "";
+		let token = myform.elements["token"].value;
+		let options = { 
+			type: 'GET', 
+			headers: {Authorization: 'Bearer ' + token,
+			Accept: 'application/octet-stream.'},
+			savePayLoadType: "multipart/form-data",
+		};
+		let clientDocId = Math.floor(Math.random() * 100);
+		
+		eViewerObj.setDocumentEndPointOptions(options, serverUrl, saveUrl, userName);
+		let documentSrvc = eViewerObj.getDocumentService();
+        documentSrvc
+          .loadDocument(docUrl, annotationUrl, clientDocId, userName, isEditMode, repoType, password, fileName)
+          .then((response) => {
+          console.log("loadDocument");
+        });
+      }
+
+      function goToPage() {
+		if(eViewerObj === null) { 
+			eViewerObj = new eViewerApp();
+		}
+		
+        let myform = document.getElementById("goToPageForm");
+        let pagenumber = myform.elements["gotoPage"].value;
+		
+		let documentSrvc = eViewerObj.getDocumentService();
+		documentSrvc.gotoPage(pagenumber.toString()).then((response) => {
+          console.log("goToPage: " + response);
+		});
+      }
+	  
+	  function setViewerOptions() {
+	    let myform = document.getElementById("uploadForm");
+	    let userName = myform.elements["userName"].value;
+	  
+		if(eViewerObj === null) { 
+			eViewerObj = new eViewerApp();
+		}
+
+		let viewerPrefSrvc = eViewerObj.getViewerPreferenceService();
+			viewerPrefSrvc.getUserPreferences(userName).then((preferences) => {
+			preferences.panning = false;
+			viewerPrefSrvc.setUserPreferences(JSON.stringify(preferences), userName);
+			});
+	  }
+
+	  function SaveDocument() {
+		let Save = document.getElementById("Save");
+		let documentSrvc = eViewerObj.getDocumentService();
+		documentSrvc.saveDocument()?.then((response) => {
+		console.log("saveDocument: " + response);
+		});	
+	  }
+    </script>
+    <div id="root">
+	<h2>Upload</h2>
+    <form id="uploadForm">
+      <table class="table" style="table-layout:fixed">
+        <thead>
+          <tr>
+            <th>
+				<label for="upload">Document Url: </label>
+				<input
+				  type="text"
+				  id="upload"
+				  name="upload"
+				  placeholder="document Url"
+				  required
+				/>
+            </th>
+            <th>
+				<label for="saveUrl">Save Endpoint Url: </label>
+				<input
+				  type="text"
+				  id="saveUrl"
+				  name="saveUrl"
+				  placeholder="Save Endpoint Url"
+				  required
+				/>
+            </th>
+            <th>
+				<label for="upload">Document Name: </label>
+				<input
+				  type="text"
+				  id="docName"
+				  name="docName"
+				  placeholder="document name"
+				  required
+				/>
+            </th>
+            <th>
+				<label for="serverUrl">Server Url: </label>
+				<input
+				  type="text"
+				  id="serverUrl"
+				  name="serverUrl"
+				  placeholder="server Url"
+				  required
+				/>
+            </th>			
+            <th>
+				<label for="annotationUrl">Annotation Url: </label>
+				<input
+				  type="text"
+				  id="annotationUrl"
+				  name="annotationUrl"
+				  placeholder="json annotation"
+				/>
+            </th>
+            <th>
+				<label for="userName">User Name: </label>
+				<input
+				  type="text"
+				  id="userName"
+				  name="userName"
+				  placeholder="userName"
+				  value="john"
+				/>
+            </th>
+          </tr>
+		  <tr>
+		  <td>
+				<label for="token">Auth Token: </label>
+				<input
+				  type="text"
+				  id="token"
+				  name="token"
+				  placeholder="token goes here"
+				  value=""
+				/>
+		  </td>
+		  <td>
+			<button type="button" onclick="OnSubmitClick()" style="margin-top:13%">Submit</button>
+		  </td>
+		  </tr>
+        </thead>
+      </table>
+    </form>
+    <h2>Page Navigation</h2>
+    <form id="goToPageForm">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>
+              <label for="gotoPage">Go To Page: </label>
+              <input
+                type="number"
+                id="gotoPage"
+                name="gotoPage"
+                placeholder="page Index"
+                required
+              />
+              <button type="button" onclick="goToPage()">
+                Go To Page
+              </button>
+            </th>
+            <th>
+              <h3>
+                Save Document: <button id="Save" type="button" onclick="SaveDocument()">
+                  Save
+                </button>
+              </h3>
+            </th>            
+          </tr>
+        </thead>
+      </table>
+    </form>
+    <div id="viewer"></div>
+    </div>
+
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+    <script>
+      var global = global || window;
+    </script>
+   </body>
+</html>
