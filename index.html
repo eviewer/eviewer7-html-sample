@@ -98,7 +98,9 @@
 		eViewerObj.setDocumentEndPointOptions(options, serverUrl, saveUrl, userName);
 		let documentSrvc = eViewerObj.getDocumentService();
         documentSrvc
-          .loadDocument(docUrl, annotationUrl, clientDocId, userName, isEditMode, repoType, password, fileName)
+          .loadDocument(
+				docUrl, annotationUrl, clientDocId, userName, "some-document-description", 
+				{isEditMode: true, repoType: "fileSystem", password:"", landingPage: 1})
           .then((response) => {
           console.log("loadDocument");
         });
