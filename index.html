@@ -42,7 +42,7 @@
 	  }, false);
 
 	  var eViewerObj = null;
-	  
+	  let licenseKey = "PROVIDED_BY_MST";
 	  function loadViewer() {
 		let jsElement = document.createElement("script");
 		jsElement.type = "application/javascript";
@@ -65,6 +65,7 @@
 			];
 			
 			eViewerObj.loadViewer("viewer", scripts, css).then(() => {
+				eViewerObj.registerLicense(licenseKey);
 				setViewerOptions();
 			});		
 		});
@@ -98,9 +99,12 @@
 		eViewerObj.setDocumentEndPointOptions(options, serverUrl, saveUrl, userName);
 		let documentSrvc = eViewerObj.getDocumentService();
         documentSrvc
-          .loadDocument(
-				docUrl, annotationUrl, clientDocId, userName, "some-document-description", 
-				{isEditMode: true, repoType: "fileSystem", password:"", landingPage: 1})
+          .loadDocument(docUrl, annotationUrl, clientDocId, userName, "some-document-description",{
+          isEditMode: true,
+          repoType: "filesystem",
+          password: "",
+          landingPage: 1,
+        })
           .then((response) => {
           console.log("loadDocument");
         });
