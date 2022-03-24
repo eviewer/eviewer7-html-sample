@@ -135,7 +135,7 @@
 		let viewerPrefSrvc = eViewerObj.getViewerPreferenceService();
 			viewerPrefSrvc.getUserPreferences(userName).then((preferences) => {
 			preferences.panning = false;
-			viewerPrefSrvc.setUserPreferences(JSON.stringify(preferences), userName);
+			viewerPrefSrvc.setUserPreferences(JSON.stringify(preferences), undefined, userName);
 			});
 	  }
 
