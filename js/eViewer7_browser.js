@@ -1,12 +1,30 @@
 class eViewerApp {
-  constructor() {
-    this.documentService = new DocumentService();
-    this.editingService = new EditingService();
-    this.viewerPreferenceService = new ViewerPreferenceService();
-    this.watermarkService = new WatermarkService();
-    this.annotationService = new AnnotationService();
+  constructor(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}  	
+    this.documentService = new DocumentService(userName);
+    this.editingService = new EditingService(userName);
+    this.viewerPreferenceService = new ViewerPreferenceService(userName);
+    this.watermarkService = new WatermarkService(userName);
+    this.annotationService = new AnnotationService(userName);
+	this.signatureService = new SignatureService(userName);
     this.scriptsLoaded = false;
     this.styleSheetsLoaded = false;
+	this.userName = userName;
+  }
+  
+  setUserName(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}
+	this.userName = userName;
+	this.documentService.setUserName(userName);
+    this.editingService.setUserName(userName);
+    this.viewerPreferenceService.setUserName(userName);
+    this.watermarkService.setUserName(userName);
+    this.annotationService.setUserName(userName);
+	this.signatureService.setUserName(userName);
   }
 
   addJS(scripts, containerID) {
@@ -60,19 +78,23 @@ class eViewerApp {
   }
 
   waitUntilLoded(resolve, reject, cntrId, fitTo) {
-    if (this.styleSheetsLoaded === true && this.scriptsLoaded === true && window.eViewerComponentReference !== undefined) {
-	  if(fitTo === undefined) {
-		fitTo = "default";
-	  }
-	  let promise = null;
-	  window.eViewerComponentReference.zone.run(() => {
-		let selectedOption = { apiName: "setContainerInfo" };
-		let inputData = { containerID: cntrId, fitStyle: fitTo };
-		promise = window.eViewerComponentReference.invokeAPI(
-			selectedOption,
-			inputData
-		  );
-	  });		
+    if (
+      this.styleSheetsLoaded === true &&
+      this.scriptsLoaded === true &&
+      window.eViewerComponentReference !== undefined
+    ) {
+      if (fitTo === undefined) {
+        fitTo = "default";
+      }
+      let promise = null;
+      window.eViewerComponentReference.zone.run(() => {
+        let selectedOption = { apiName: "setContainerInfo" };
+        let inputData = { containerID: cntrId, fitStyle: fitTo };
+        promise = window.eViewerComponentReference.invokeAPI(
+          selectedOption,
+          inputData
+        );
+      });
       resolve();
     } else {
       setTimeout(() => {
@@ -135,7 +157,7 @@ class eViewerApp {
     options,
     eViewerUrl,
     savingEndPoint,
-    userName,
+    ocrEndPoint,
     hideToolBar
   ) {
     if (hideToolBar === undefined || hideToolBar === null) {
@@ -144,9 +166,10 @@ class eViewerApp {
 
     let inputData = {};
     inputData.savingEndPoint = savingEndPoint;
+    inputData.ocrEndPoint = ocrEndPoint;
     inputData.options = options;
     inputData.eViewerServerUrl = eViewerUrl;
-    inputData.userName = userName;
+    inputData.userName = this.userName;
     inputData.hideToolBar = hideToolBar;
     let selectedOption = { apiName: "setDocumentEndPointOptions" };
     let promise = null;
@@ -247,6 +270,7 @@ class eViewerApp {
         btn.ngbTooltip = button.name;
         btn.container = "body";
         btn.src = button.iconUrl;
+        btn.placementIndex = button.placementIndex;
         leftCommonButtons.push(btn);
       } else if (button.alignment === "rightToolbar") {
         let btn = {};
@@ -256,6 +280,7 @@ class eViewerApp {
         btn.container = "body";
         btn.src = button.iconUrl;
         btn.ngbDropdown = false;
+        btn.placementIndex = button.placementIndex;
         rightCommonButtons.push(btn);
       } else if (button.alignment === "ribbonToolbar") {
         let btn = {};
@@ -266,6 +291,7 @@ class eViewerApp {
         btn.icon = button.iconUrl;
         btn.type = "link";
         btn.class = "disable-icons";
+        btn.placementIndex = button.placementIndex;
         ribbonCommonButtons.push(btn);
       }
     });
@@ -324,9 +350,9 @@ class eViewerApp {
         inputData
       );
     });
-    return promise;    
+    return promise;
   }
-  
+
   removeButtons(buttons) {
     let leftCommonButtons = [];
     let rightCommonButtons = [];
@@ -352,8 +378,8 @@ class eViewerApp {
         inputData
       );
     });
-    return promise;    
-  }  
+    return promise;
+  }
 
   getDocumentService() {
     return this.documentService;
@@ -374,13 +400,32 @@ class eViewerApp {
   getAnnotationService() {
     return this.annotationService;
   }
+  
+  getSignatureService() {
+    return this.signatureService;
+  }
 }
 
 class DocumentService {
-  constructor() {}
+  constructor(userName) {
+	  this.userName = userName;
+  }
+
+  setUserName(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}
+	this.userName = userName;
+  }
 
   // Loads base64 document in viewer
-  async insertDocument(file) {
+  async insertDocument(file, options) {
+    /*
+	//optional parameter
+    {
+		pageFilters: [{"pageNo": 1, "visible": true}]
+    }
+	*/
     let inputData = {};
     let fileURL = "";
     let width = "";
@@ -392,8 +437,12 @@ class DocumentService {
       let reader = new FileReader();
       reader.readAsDataURL(file[0]);
       reader.onload = (events) => {
+		if(options.pageFilters === undefined) {
+			options.pageFilters = [];
+		}
         fileURL = events.target.result;
         inputData.fileUrl = fileURL;
+		inputData.pageFilters = options.pageFilters;
         if (
           file[0].type !== "image/jpeg" &&
           file[0].type !== "image/png" &&
@@ -437,34 +486,51 @@ class DocumentService {
     docUrl,
     annotationUrl,
     clientDocID,
-    userName,
     fileName,
     options
   ) {
+	/*
+    //optional parameter
+    {
+		isEditMode: true,
+        repoType: "filesystem",
+        password: "",
+        landingPage: this.state.landingPgNo,
+		pageFilters: [{"pageNo": 1, "visible": true}]
+    }
+	*/
     let inputData = {};
     inputData.docURLs = docUrl;
     inputData.annURLs = annotationUrl;
     inputData.clientDocID = clientDocID;
-    inputData.userName = userName;
+    inputData.userName = this.userName;
     inputData.fileName = fileName;
 
     if (options === undefined) {
-      options = { isEditMode: true, repoType: "filesystem", password: "", landingPage: 1 };
+      options = {
+        isEditMode: true,
+        repoType: "filesystem",
+        password: "",
+        landingPage: 1,
+      };
     } else {
-		if(options.isEditMode === undefined) {
-			options.isEditMode = "true";
-		} else {
-			options.isEditMode = options.isEditMode.toString();
-		}
-		if(options.repoType === undefined) {
-			options.repoType = "filesystem";
-		}
-		if(options.password === undefined) {
-			options.password = "";
-		}
-		if(options.landingPage === undefined || options.landingPage === "") {
-			options.landingPage = 1;
-		}
+      if (options.isEditMode === undefined) {
+        options.isEditMode = "true";
+      } else {
+        options.isEditMode = options.isEditMode.toString();
+      }
+      if (options.repoType === undefined) {
+        options.repoType = "filesystem";
+      }
+      if (options.password === undefined) {
+        options.password = "";
+      }
+      if (options.landingPage === undefined || options.landingPage === "") {
+        options.landingPage = 1;
+      }
+      if (options.pageFilters === undefined) {
+        options.pageFilters = [];
+      }
     }
 
     inputData.options = options;
@@ -534,9 +600,9 @@ class DocumentService {
         inputData
       );
     });
-    return promise; // returns "{ currentPage: pgNo }"  
+    return promise; // returns "{ currentPage: pgNo }"
   }
-  
+
   closeDocument(viewerDocID) {
     let inputData = {};
     inputData.viewerDocID = viewerDocID;
@@ -709,6 +775,91 @@ class DocumentService {
     return promise;
   }*/
 
+  getDocumentInfo(docId) {
+    let inputData = {};
+	inputData.docId = docId;
+
+    let selectedOption = { apiName: "getDocumentInfo" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"docId": "",
+		"clientDocId": "",
+		"docName": "",
+		"size": 0,
+		"pageCount": 0,
+		"fileFormat": "PDF or TIFF, PNG, JPG or BMP or GIF or DOC, XLS, PPT, DOCX, XLSX, PPTX, TXT"
+	}
+	*/
+    return promise;  
+  }
+  
+  getActiveDocumentInfo() {
+    let inputData = {};
+
+    let selectedOption = { apiName: "getActiveDocumentInfo" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"docId": "",
+		"clientDocId": "",
+		"docName": "",
+		"size": 0,
+		"pageCount": 0,
+		"fileFormat": "PDF or TIFF, PNG, JPG or BMP or GIF or DOC, XLS, PPT, DOCX, XLSX, PPTX, TXT"
+	}
+	*/
+    return promise;  
+  }
+ 
+  getPageInfo(docId, pageRange) {
+	/*
+	pageRange: "1", "1,2,6" or "1-6" or all
+	*/
+    let inputData = {};
+    inputData.docId = docId;
+	inputData.pageRange = pageRange;
+
+    let selectedOption = { apiName: "getPageInfo" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	[{
+		"pageNo": 0,
+		"hide": false
+		"height": 0,
+		"width": 0,
+		"xDPI": 0,
+		"yDPI": 0,
+		"bitDepth": 1 or 4 or 8 or 16 or 24 or 32
+	}]
+	*/
+    return promise;  
+  }
+
   searchText(options) {
     let inputData = {};
     inputData.options = options;
@@ -724,9 +875,113 @@ class DocumentService {
 
     return promise;
   }
+
+  filterPages(docId, pageFilters) {
+	/*
+	[{"pageNo": 1, "visible": true}]
+	*/
+	
+	if(pageFilters === undefined) {
+		pageFilters = [];
+	}
+	
+    let inputData = {};
+    inputData.docId = docId;
+	inputData.pageFilters = pageFilters;
+
+    let selectedOption = { apiName: "filterPages" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"success": true,
+	}
+	*/
+    return promise;
+  }
+  
+  showOnlyPages(docId, pages) {
+	/*
+	[1, 3, 5]
+	*/
+	
+	if(pages === undefined) {
+		pages = [];
+	}
+	
+    let inputData = {};
+    inputData.docId = docId;
+	inputData.pages = pages;
+
+    let selectedOption = { apiName: "showOnlyPages" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"success": true,
+	}
+	*/
+    return promise;
+  }  
+  
+  hideOnlyPages(docId, pages) {
+	/*
+	[1, 3, 5]
+	*/
+	if(pages === undefined) {
+		pages = [];
+	}
+	
+	
+    let inputData = {};
+    inputData.docId = docId;
+	inputData.pages = pages;
+
+    let selectedOption = { apiName: "hideOnlyPages" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"success": true,
+	}
+	*/
+    return promise;
+  }   
 }
 
 class EditingService {
+  constructor(userName) {
+	this.userName = userName;
+  }
+  
+  setUserName(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}
+	this.userName = userName;
+  }
+  
   zoomIn() {
     let inputData = {};
 
@@ -850,6 +1105,7 @@ class EditingService {
 
   exportDocument(options) {
     let inputData = {};
+	options.formName = "export";
     inputData.options = options;
 
     let selectedOption = { apiName: "exportDocument" };
@@ -876,74 +1132,392 @@ class EditingService {
         inputData
       );
     });
+    return promise;
+  }
+  
+  getCurrentScale(docId) {
+    let inputData = {};
+    inputData.docId = docId;
 
+    let selectedOption = { apiName: "getCurrentScale" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"docId": "",
+		"scale": 1.0,
+		"zoomPreset": "fitToWindow or fitToWidth or none"
+	}
+	*/
+    return promise;
+  }  
+  
+  getCurrentRotation(docId, pageNo) {
+    let inputData = {};
+    inputData.docId = docId;
+    inputData.pageNo = pageNo;
+
+    let selectedOption = { apiName: "getCurrentRotation" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+	/*
+	When this promise is resolved it will send an object containing document info.
+	{
+		"docId": "",
+		"rotation": 0 or 90 or 180 or 270
+	}
+	*/
     return promise;
   }
 }
 
 class ViewerPreferenceService {
-  constructor() {
+  constructor(userName) {
+	this.userName = userName;
     this.defaultPrefJSON = {
-      userId: "ibRGHYys",
-      username: "Administrator",
-      isAnnotationTabVisible: true,
-      isInsertTabVisible: true,
-      isRedactTabVisible: true,
-      isViewTabVisible: true,
-      saveDocument: true,
-      exportDocument: true,
-      print: true,
-      scanDocument: true,
-      insertDocument: true,
-      uploadDocument: true,
-      newDocument: true,
-      appendDocument: true,
-      pageNavigation: true,
-      hideThumbnails: true,
-      panning: true,
-      cutCopyPaste: true,
-      undo: true,
-      watermark: true,
-      deletePage: true,
-      split: true,
-      redaction: true,
-      searchRedact: true,
-      redactViewMode: true,
-      clearRedaction: true,
-      zoom: true,
-      fitToWindow: true,
-      fitToWidth: true,
-      actual: true,
-      thumbnailView: true,
-      sideBysideView: false,
-      rotate: true,
-      line: true,
-      arrow: true,
-      button: true,
-      selectText: true,
-      rectangle: true,
-      circle: true,
-      highlight: true,
-      pen: true,
-      textAnnotation: true,
-      stamp: true,
-      polyLine: true,
-      polygon: true,
-      stickynote: true,
-      checkpoint: true,
-      view: "pageView",
-      zoomPreference: "actualControl",
-      textSearch: true,
-      showHideAnn: true,
-      closeAllFile: true,
-      closeFile: true,
-      newDocPre: "pdf",
-      switchThumb: "left",
-      isLogEnabled: false,
-      selectedOption: "info",
-      annComments: true,
-      isOcrEnabled: false,
-      firstChunkSize: 1,
+      userInfo: {
+        userId: "ibRGHYys",
+        username: "Administrator",
+      },
+      leftDocToolbar: {
+        hideThumbnails: true,
+        panning: true,
+        zoom: true,
+        rotate: true,
+        fitToWindow: true,
+        fitToWidth: true,
+      },
+      rightViewerToolbar: {
+        uploadDocument: true,
+        viewCheckpoints: true,
+        insertDocument: true,
+        newDocument: true,
+        scanDocument: true,
+        closeAllFile: true,
+        closeFile: true,
+        saveDocument: true,
+        viewComments: true,
+        info: true,
+        settings: {
+          userPreferences: true,
+          exportDocument: true,
+          print: true,
+        },
+      },
+      rightDocToolbar: {
+        pageNavigation: true,
+      },
+      ribbonToolbar: [
+        {
+          name: "View",
+          isViewTabVisible: true,
+          children: {
+            split: true,
+            undo: true,
+            actual: true,
+            thumbnailView: true,
+            sideBysideView: true,
+            textSearch: true,
+            selectText: true,
+          },
+        },
+        {
+          name: "Insert",
+          isInsertTabVisible: true,
+          children: {
+            cutCopyPaste: true,
+            deletePage: true,
+            checkpoint: true,
+            appendDocument: true,
+            watermark: true,
+          },
+        },
+        {
+          name: "Annotate",
+          isAnnotationTabVisible: true,
+          children: {
+            line: true,
+            arrow: true,
+            circle: true,
+            rectangle: true,
+            pen: true,
+            highlight: true,
+            textAnnotation: true,
+            stamp: true,
+            polyLine: true,
+            polygon: true,
+            stickynote: true,
+            button: true,
+            showHideAnn: true,
+            cloud: true
+          },
+        },
+        {
+          name: "Redact",
+          isRedactTabVisible: true,
+          children: {
+            redactWord: true,
+            redaction: true,
+            searchRedact: true,
+            clearRedaction: true,
+            redactViewMode: true,
+          },
+        },
+		{
+			name: "Signature",
+			isSignatureTabVisible: true,
+			children: {
+				drawSignature: true
+			}
+		}		
+      ],
+      general: {
+        view: "pageView",
+        zoomPreference: "actualControl",
+        newDocPre: "pdf",
+        switchThumb: "left",
+        isLogEnabled: false,
+        selectedOption: "info",
+        isOcrEnabled: false,
+        firstChunkSize: 1,
+        annComments: true,
+        showDocThumbBar: true,
+		showDocSignPanel: true,
+        autogrowDocTabWidth: false,
+      },
+    };
+
+    this.defaultShortcutPrefJSON = {
+      shortcuts: [
+        {
+          key: "Alt+=",
+          command: "zoomin",
+          title: "Zoom In",
+        },
+        {
+          key: "Alt+-",
+          command: "zoomout",
+          title: "Zoom Out",
+        },
+        {
+          key: "Shift+S",
+          command: "save",
+          title: "Save",
+        },
+        {
+          key: "Ctrl+Shift+X",
+          command: "export",
+          title: "Export",
+        },
+        {
+          key: "Shift+P",
+          command: "print",
+          title: "Print",
+        },
+        {
+          key: "Shift+HOME",
+          command: "firstpage",
+          title: "First Page",
+        },
+        {
+          key: "Shift+END",
+          command: "lastpage",
+          title: "Last Page",
+        },
+        {
+          key: "Alt+PAGEUP",
+          command: "previouspage",
+          title: "Previous Page",
+        },
+        {
+          key: "Alt+PAGEDOWN",
+          command: "nextpage",
+          title: "Next Page",
+        },
+        {
+          key: "Shift+R",
+          command: "rotateclockwise",
+          title: "Rotate",
+        },
+        {
+          key: "Ctrl+Alt+B",
+          command: "thumbnails",
+          title: "Thumbnails",
+        },
+        {
+          key: "Ctrl+Shift+Y",
+          command: "redaction",
+          title: "Redaction",
+        },
+        {
+          key: "Alt+P",
+          command: "search and redact",
+          title: "Search And Redact",
+        },
+        {
+          key: "Shift+Z",
+          command: "redact view mode",
+          title: "Redact View Mode",
+        },
+        {
+          key: "Ctrl+Alt+L",
+          command: "line",
+          title: "Line",
+        },
+        {
+          key: "Ctrl+Alt+R",
+          command: "rectangle",
+          title: "Rectangle",
+        },
+        {
+          key: "Ctrl+Alt+C",
+          command: "circle",
+          title: "Circle",
+        },
+        {
+          key: "Shift+Alt+O",
+          command: "arrow",
+          title: "Arrow",
+        },
+        {
+          key: "Ctrl+Alt+P",
+          command: "pen",
+          title: "Pen",
+        },
+        {
+          key: "Shift+Alt+H",
+          command: "highlight",
+          title: "Highlight",
+        },
+        {
+          key: "Shift+Alt+K",
+          command: "text",
+          title: "Text",
+        },
+        {
+          key: "Shift+Alt+S",
+          command: "stamp",
+          title: "Stamp",
+        },
+        {
+          key: "Shift+Alt+M",
+          command: "polyline",
+          title: "Polyline",
+        },
+        {
+          key: "Shift+Alt+N",
+          command: "polygon",
+          title: "Polygon",
+        },
+        {
+          key: "Shift+Ctrl+Q",
+          command: "checkpoint",
+          title: "Checkpoint",
+        },
+        {
+          key: "Ctrl+Alt+W",
+          command: "watermark",
+          title: "Watermark",
+        },
+        {
+          key: "Ctrl+M",
+          command: "show-hide annotations",
+          title: "Show-Hide Annotations",
+        },
+        {
+          key: "DELETE",
+          command: "delete annotations",
+          title: "Delete Annotations",
+        },
+        {
+          key: "Ctrl+1",
+          command: "actual size",
+          title: "Actual Size",
+        },
+        {
+          key: "Ctrl+2",
+          command: "fit to width",
+          title: "Fit To Width",
+        },
+        {
+          key: "Ctrl+3",
+          command: "fit to window",
+          title: "Fit To Window",
+        },
+        {
+          key: "Ctrl+X",
+          command: "cut page",
+          title: "Cut Page",
+        },
+        {
+          key: "Ctrl+DELETE",
+          command: "delete page",
+          title: "Delete Page",
+        },
+        {
+          key: "Ctrl+C",
+          command: "copy page",
+          title: "Copy Page",
+        },
+        {
+          key: "Ctrl+V",
+          command: "paste page",
+          title: "Paste Page",
+        },
+        {
+          key: "Ctrl+Shift+F",
+          command: "search",
+          title: "Search",
+        },
+        {
+          key: "Shift+<",
+          command: "previous search",
+          title: "Previous Search",
+        },
+        {
+          key: "Shift+>",
+          command: "next search",
+          title: "Next Search",
+        },
+        {
+          key: "Alt+I",
+          command: "version number",
+          title: "Version Number",
+        },
+        {
+          key: "Alt+H",
+          command: "show keyboard hint",
+          title: "Show Hotkeys Hint",
+        },
+        {
+          key: "Alt+U",
+          command: "previous",
+          title: "Previous",
+        },
+        {
+          key: "Alt+Y",
+          command: "next",
+          title: "Next",
+        },
+        {
+          key: "Alt+Z",
+          command: "close",
+          title: "Close",
+        },
+      ],
     };
 
     this.defaultAnnotationPropertyJSON = [
@@ -1159,29 +1733,50 @@ class ViewerPreferenceService {
         userType: "0",
         width: "150",
       },
+	  {
+         annId: "ciwSuCgl",
+         annType: "Drawsignature",
+         borderWidth: "0",
+         fillColor: "#FFFFFF",
+         fontSize: "0",
+         height: "0",
+         opacity: "0.01",
+         strokeColor: "#FFFFFF",
+         type: "0",
+         userType: "0",
+         width: "0"
+      },	  
     ];
-	
-	this.defaultActionScriptJSON = 	[
-	  	{
-			"name": "Script1",
-			"value": "YWxlcnQoJ0hlbGxvIEkgYW0gU2NyaXB0MScp",
-			"pdfvalue": "YXBwLmFsZXJ0KCJIZWxsbyBJIGFtIHNjcmlwdCAxIik="
-		},
-		{
-			"name": "Script2",
-			"value": "YWxlcnQoJ0hlbGxvIEkgYW0gU2NyaXB0Micp",
-			"pdfvalue": "YXBwLmFsZXJ0KCJIZWxsbyBJIGFtIHNjcmlwdCAyIik="
-		}
-	];
+
+    this.defaultActionScriptJSON = [
+      {
+        name: "Script1",
+        value: "YWxlcnQoJ0hlbGxvIEkgYW0gU2NyaXB0MScp",
+        pdfvalue: "YXBwLmFsZXJ0KCJIZWxsbyBJIGFtIHNjcmlwdCAxIik=",
+      },
+      {
+        name: "Script2",
+        value: "YWxlcnQoJ0hlbGxvIEkgYW0gU2NyaXB0Micp",
+        pdfvalue: "YXBwLmFsZXJ0KCJIZWxsbyBJIGFtIHNjcmlwdCAyIik=",
+      },
+    ];
   }
 
-  setUserPreferences(preferences, userName) {
+  setUserName(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}
+	this.userName = userName;
+  }
+  
+  setUserPreferences(preferences, shortcutPreferences) {
     let inputData = {};
     inputData.preferences = preferences;
+    inputData.shortcutPreferences = shortcutPreferences;
     inputData.defaultAnnotationPropertyJSON =
       this.defaultAnnotationPropertyJSON;
-	  inputData.defaultActionScriptJSON = this.defaultActionScriptJSON;
-    inputData.userName = userName;
+    inputData.defaultActionScriptJSON = this.defaultActionScriptJSON;
+    inputData.userName = this.userName;
 
     let selectedOption = { apiName: "setViewerPreference" };
     let promise = null;
@@ -1195,19 +1790,32 @@ class ViewerPreferenceService {
     return promise;
   }
 
-  getUserPreferences(userName, defaultPrefJSON, loadFromAssets) {
+  getUserPreferences(
+    defaultPrefJSON,
+    defaultShortcutPrefJSON,
+    loadFromAssets
+  ) {
     let inputData = {};
-    inputData.userName = userName;
+    inputData.userName = this.userName;
 
     let selectedOption = { apiName: "getViewerPreference" };
 
-	if(loadFromAssets === undefined || loadFromAssets === false) {
-    if (defaultPrefJSON !== undefined && defaultPrefJSON !== null) {
-		  inputData.defaultPrefJSON = defaultPrefJSON;
-		} else {
-      inputData.defaultPrefJSON = this.defaultPrefJSON;
-		}
-		inputData.defaultAnnotationPropertyJSON = this.defaultAnnotationPropertyJSON;		
+    if (loadFromAssets === undefined || loadFromAssets === false) {
+      if (defaultPrefJSON !== undefined && defaultPrefJSON !== null) {
+        inputData.defaultPrefJSON = defaultPrefJSON;
+      } else {
+        inputData.defaultPrefJSON = this.defaultPrefJSON;
+      }
+      inputData.defaultAnnotationPropertyJSON =
+        this.defaultAnnotationPropertyJSON;
+      if (
+        defaultShortcutPrefJSON !== undefined &&
+        defaultShortcutPrefJSON !== null
+      ) {
+        inputData.defaultShortcutPrefJSON = defaultShortcutPrefJSON;
+      } else {
+        inputData.defaultShortcutPrefJSON = this.defaultShortcutPrefJSON;
+      }
     }
 
     let promise = null;
@@ -1223,7 +1831,16 @@ class ViewerPreferenceService {
 }
 
 class WatermarkService {
-  constructor() {}
+  constructor(userName) {
+	  this.userName = userName;
+  }
+
+  setUserName(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}
+	this.userName = userName;
+  }
 
   newWatermark(properties) {
     let inputData = {};
@@ -1247,6 +1864,17 @@ class WatermarkService {
 }
 
 class AnnotationService {
+  constructor(userName) {
+	this.userName = userName;
+  }
+  
+  setUserName(userName) {
+	if(userName === undefined || userName === "") {
+		userName = "Administrator";
+	}
+	this.userName = userName;
+  }
+  
   selectShape(annType, options) {
     let inputData = {};
     inputData.annType = annType;
@@ -1426,7 +2054,7 @@ class AnnotationService {
 
     let selectedOption = { apiName: "getStamps" };
     window.eViewerComponentReference.zone.run(() => {
-        stampDetailsArray = window.eViewerComponentReference.invokeAPI(
+      stampDetailsArray = window.eViewerComponentReference.invokeAPI(
         selectedOption,
         inputData
       );
@@ -1574,3 +2202,109 @@ class AnnotationService {
     return promise;
   }
 }
+
+class SignatureService {
+	constructor(userName) {
+	  this.userName = userName;
+	}
+
+	setUserName(userName) {
+		if(userName === undefined || userName === "") {
+			userName = "Administrator";
+		}
+		this.userName = userName;
+	}
+	
+	setAvailableCertificates(certificates) {
+		/*
+		[{ certificate: "BASE64 CERTIFICATE", commonName: "", expiry: "", issuedBy: "", password: "" }]
+		*/
+		let inputData = {};
+		inputData.certificates = certificates;
+
+		let selectedOption = { apiName: "setAvailableCertificates" };
+		let promise = null;
+		window.eViewerComponentReference.zone.run(() => {
+		  promise = window.eViewerComponentReference.invokeAPI(
+			selectedOption,
+			inputData
+		  );
+		});
+
+		return promise;		
+	}
+	
+	setAvailableAppearances(appearances) {
+		/*
+		["BASE64 IMAGE"]
+		*/
+		let inputData = {};
+		inputData.appearances = appearances;
+
+		let selectedOption = { apiName: "setAvailableAppearances" };
+		let promise = null;
+		window.eViewerComponentReference.zone.run(() => {
+		  promise = window.eViewerComponentReference.invokeAPI(
+			selectedOption,
+			inputData
+		  );
+		});
+
+		return promise;		
+	}
+}
+
+//class RedactionService {
+//
+//	clearRedaction() {
+//	}
+//	
+//	/*
+//	redactMode: "redact or normal"
+//	*/
+//	switchRedactView(redactMode) {
+//		return new Promise(reject, resolve) {
+//			resolve(true);
+//		};
+//	}
+//	
+//	getRedactionTags() {
+//		return new Promise(reject, resolve) {
+//			resolve(["Confidential", "Prohibited"]);
+//		};
+//	}
+	
+//	/*
+//	rects[]: An array of redaction objects
+//	redaction object: { rect: [x, y, width, height], page: 1, tag: "" }
+//	*/	
+//	redactRect(rects) {
+//		return new Promise(reject, resolve) {
+//			resolve(true);
+//		};
+//	}
+//	
+//	getExpressions() {
+//		return new Promise(reject, resolve) {
+//			resolve({PII: ["", ""]});
+//		};		
+//	}
+//	
+//	/*
+//	expression: { "label": "", expression: ""} 
+//	*/	
+//	redactExpression(expression) {
+//		return new Promise(reject, resolve) {
+//			resolve(true);
+//		};	
+//	}
+//	
+//	/*
+//	word: ""
+//	*/
+//	redactWord(word) {
+//		return new Promise(reject, resolve) {
+//			resolve(true);
+//		};			
+//	}
+//}

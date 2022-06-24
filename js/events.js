@@ -1,8 +1,9 @@
-window._docLoadComplete = function (docID, time) {
+window._docLoadComplete = function (docInfo) {
   try {
     console.log(
-      "docLoadComplete for documentID: " + docID + " in " + time + "ms"
+      "docLoadComplete Info Below: "
     );
+	console.log(docInfo);
   } catch (exp) {}
 };
 
@@ -20,9 +21,10 @@ window._customButtonClicked = function (operation) {
   } catch (exp) {}
 };
 
-window._docSaveComplete = function (docID, annotationData) {
+window._docSaveComplete = function (docID, response) {
   try {
-    console.log("docSaveComplete: " + docID + " annData: " + annotationData);
+    console.log("docSaveComplete: " + docID);
+    console.log(response);
   } catch (exp) {}
 };
 
@@ -131,5 +133,23 @@ try {
         eViewerObj.annotationService.drawShapes(pageRange, annotationData);
       });
     }*/
+  } catch (exp) {}
+};
+
+window._newCertificate = function (certificate) {
+try {
+	/*
+	{ userName: "", certificate: "BASE64 certificate", commonName: "", expiry: "", issuedBy: "", password: "" }
+	*/
+    console.log(certificate);
+  } catch (exp) {}
+};
+
+window._newAppearance = function (appearance) {
+try {
+	/*
+	{ userName: "", appearanceImg: "BASE64 image" }
+	*/
+    console.log(appearance);
   } catch (exp) {}
 };

@@ -42,7 +42,7 @@
 	  }, false);
 
 	  var eViewerObj = null;
-	  let licenseKey = "PROVIDED_BY_MST";
+	  let licenseKey = "<LICENSE KEY GOES HERE>";
 	  function loadViewer() {
 		let jsElement = document.createElement("script");
 		jsElement.type = "application/javascript";
@@ -96,10 +96,11 @@
 		};
 		let clientDocId = Math.floor(Math.random() * 100);
 		
-		eViewerObj.setDocumentEndPointOptions(options, serverUrl, saveUrl, userName);
+		eViewerObj.setUserName(userName);
+		eViewerObj.setDocumentEndPointOptions(options, serverUrl, saveUrl);
 		let documentSrvc = eViewerObj.getDocumentService();
         documentSrvc
-          .loadDocument(docUrl, annotationUrl, clientDocId, userName, "some-document-description",{
+          .loadDocument(docUrl, annotationUrl, clientDocId, "some-document-description",{
           isEditMode: true,
           repoType: "filesystem",
           password: "",
@@ -131,11 +132,10 @@
 		if(eViewerObj === null) { 
 			eViewerObj = new eViewerApp();
 		}
-
+		eViewerObj.setUserName(userName);
 		let viewerPrefSrvc = eViewerObj.getViewerPreferenceService();
-			viewerPrefSrvc.getUserPreferences(userName).then((preferences) => {
-			preferences.panning = false;
-			viewerPrefSrvc.setUserPreferences(JSON.stringify(preferences), undefined, userName);
+			viewerPrefSrvc.getUserPreferences().then((preferences) => {
+				viewerPrefSrvc.setUserPreferences(preferences.userPreferences, preferences.shortcutPreferences);
 			});
 	  }
 
