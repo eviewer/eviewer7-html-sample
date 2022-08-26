@@ -1,8 +1,6 @@
 window._docLoadComplete = function (docInfo) {
   try {
-    console.log(
-      "docLoadComplete Info Below: "
-    );
+    console.log("docLoadComplete Info Below: ");
 	console.log(docInfo);
   } catch (exp) {}
 };
@@ -23,8 +21,7 @@ window._customButtonClicked = function (operation) {
 
 window._docSaveComplete = function (docID, response) {
   try {
-    console.log("docSaveComplete: " + docID);
-    console.log(response);
+    console.log("docSaveComplete: " + docID + " response: " + response);
   } catch (exp) {}
 };
 
@@ -153,3 +150,27 @@ try {
     console.log(appearance);
   } catch (exp) {}
 };
+
+window._preferenceUpdate = function (preferenceData) {
+  try {
+    /*
+    { userName: "", userPreference: "", annotationPreference: "", customStamps: ""}
+    */
+    console.log(preferenceData);
+  } catch (exp) {}
+};
+
+window._zoomChange = function (zoomData) {
+  try {
+    /*
+      { clientDocID: "", docID: "", scale: "", zoomPreset: ""}
+      */
+    console.log(zoomData);
+  } catch (exp) {}
+};
+
+window._onContextMenu = function (info) {
+  try {
+    console.log(info);
+  } catch (exp) {}
+}

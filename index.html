@@ -64,7 +64,21 @@
 						  // './viewer/vendor.js' // only for non prod builds
 			];
 			
-			eViewerObj.loadViewer("viewer", scripts, css).then(() => {
+          var options = {
+            contextMenuOptions: {
+              overrideContextMenus: true,
+              location: [
+                "documentView",
+                "pageThumbnails",
+                "docThumbnails",
+                "toolbar",
+                "docTab",
+              ],
+            },
+          };
+          eViewerObj
+            .loadViewer("viewer", scripts, css, "best-fit", options)
+            .then(() => {
 				eViewerObj.registerLicense(licenseKey);
 				setViewerOptions();
 			});		
