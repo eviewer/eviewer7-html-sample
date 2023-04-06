@@ -114,11 +114,17 @@
 		eViewerObj.setDocumentEndPointOptions(options, serverUrl, saveUrl);
 		let documentSrvc = eViewerObj.getDocumentService();
         documentSrvc
-          .loadDocument(docUrl, annotationUrl, clientDocId, "some-document-description",{
+          .loadDocumentWithOptions(docUrl, annotationUrl, clientDocId, {
           isEditMode: true,
           repoType: "filesystem",
           password: "",
           landingPage: 1,
+		  tabStyle: {
+            fileName: "some-document-description-OUTFOCUS",
+          },
+          focusTabStyle: {
+            fileName: "some-document-description-INFOCUS",
+          },
         })
           .then((response) => {
           console.log("loadDocument");
@@ -149,7 +155,8 @@
 		eViewerObj.setUserName(userName);
 		let viewerPrefSrvc = eViewerObj.getViewerPreferenceService();
 			viewerPrefSrvc.getUserPreferences().then((preferences) => {
-				viewerPrefSrvc.setUserPreferences(preferences.userPreferences, preferences.shortcutPreferences);
+				preferences.panning = false;
+				viewerPrefSrvc.setUserPreferences(JSON.stringify(preferences.userPreferences), JSON.stringify(preferences.shortcutPreferences));
 			});
 	  }
 
