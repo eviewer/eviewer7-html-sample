@@ -60,6 +60,17 @@ window._annPropUpdated = function (docID, pageNo, annID, annProperty) {
   } catch (exp) {}
 };
 
+window._wmPropUpdated = function (docId, wmId) {
+  try {
+    console.log(
+      "wmPropUpdated: docID " +
+        docId +
+        " wmID: " +
+        wmId 
+    );
+  } catch (exp) {}
+}
+
 window._buttonAnnClicked = function (docID, annID, pageNo, buttonText) {
   try {
     console.log(
@@ -142,6 +153,12 @@ try {
   } catch (exp) {}
 };
 
+window._updateDefaultCertificate = function (certificate) {
+  try {
+    console.log(certificate);
+  } catch (exp) {}
+};
+
 window._newAppearance = function (appearance) {
 try {
 	/*
@@ -172,5 +189,13 @@ window._zoomChange = function (zoomData) {
 window._onContextMenu = function (info) {
   try {
     console.log(info);
+  } catch (exp) {}
+}
+
+
+window._tabSwitch = function (outFocusViewerDocID,inFocusViewerDocID) {
+  try {
+    console.log("OutFocus ViewerDocId : " + outFocusViewerDocID);
+    console.log("InFocus ViewerDocId: " + inFocusViewerDocID);
   } catch (exp) {}
 }

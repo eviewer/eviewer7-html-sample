@@ -1,3 +1,4 @@
+
 class eViewerApp {
   constructor(userName) {
 	if(userName === undefined || userName === "") {
@@ -9,6 +10,9 @@ class eViewerApp {
     this.watermarkService = new WatermarkService(userName);
     this.annotationService = new AnnotationService(userName);
 	this.signatureService = new SignatureService(userName);
+    this.redactionService = new RedactionService(userName);
+    this.iconCacheManagerService = new IconCacheManagerService(userName);
+    this.docMetadataService = new DocMetadataService(userName);
     this.scriptsLoaded = false;
     this.styleSheetsLoaded = false;
 	this.userName = userName;
@@ -25,6 +29,9 @@ class eViewerApp {
     this.watermarkService.setUserName(userName);
     this.annotationService.setUserName(userName);
 	this.signatureService.setUserName(userName);
+    this.redactionService.setUserName(userName);
+    this.iconCacheManagerService.setUserName(userName);
+    this.docMetadataService.setUserName(userName);
   }
 
   addJS(scripts, containerID) {
@@ -89,7 +96,11 @@ class eViewerApp {
       let promise = null;
       window.eViewerComponentReference.zone.run(() => {
         let selectedOption = { apiName: "setContainerInfo" };
-        let inputData = { containerID: cntrId, fitStyle: fitTo, options: options };
+        let inputData = {
+          containerID: cntrId,
+          fitStyle: fitTo,
+          options: options,
+        };
         promise = window.eViewerComponentReference.invokeAPI(
           selectedOption,
           inputData
@@ -101,6 +112,40 @@ class eViewerApp {
         this.waitUntilLoded(resolve, reject, cntrId, fitTo, options);
       }, 100);
     }
+  }
+
+  // set the Document Tooltip Direction
+  setDocumentNameTooltipDirection(direction) {
+    let inputData = {};
+    inputData.direction = direction;
+
+    let selectedOption = { apiName: "setDocumentNameTooltipDirection" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  onDocumentTabHover(callBack) {
+    let inputData = {};
+
+    inputData.callBack = callBack;
+
+    let selectedOption = { apiName: "onDocumentTabHover" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
   }
 
   // Initialize the viewer GUI and load viewer inside a div.
@@ -117,15 +162,7 @@ class eViewerApp {
           this.scriptsLoaded = true;
         }
 
-        var css = [
-          // { href: "./assets/css/styles.css" },
-          {
-            href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css",
-            integrity:
-              "sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=",
-            crossorigin: "anonymous",
-          },
-        ];
+        var css = [];
         if (styleSheets !== null && styleSheets !== undefined) {
           self.addCSS(styleSheets);
         } else {
@@ -139,10 +176,29 @@ class eViewerApp {
     });
   }
 
-  registerLicense(licenseKey) {
+  registerLicense(licenseKey, licenseServerUrl) {
+    if (licenseServerUrl == null) {
+      licenseServerUrl = "";
+    }
+
     let inputData = {};
     inputData.licenseKey = licenseKey;
+    inputData.licenseServerUrl = licenseServerUrl;
     let selectedOption = { apiName: "registerLicense" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  setUserType(userType) {
+    let inputData = {};
+    inputData.userType = userType;
+    let selectedOption = { apiName: "setUserType" };
     let promise = null;
     window.eViewerComponentReference.zone.run(() => {
       promise = window.eViewerComponentReference.invokeAPI(
@@ -197,10 +253,10 @@ class eViewerApp {
     return promise;
   }
 
-  toggleThumbnail() {
+  alignThumbnails(alignDirection) {
     let inputData = {};
-
-    let selectedOption = { apiName: "toggleThumbnail" };
+    inputData.alignThumbnails = alignDirection;
+    let selectedOption = { apiName: "alignThumbnails" };
     let promise = null;
     window.eViewerComponentReference.zone.run(() => {
       promise = window.eViewerComponentReference.invokeAPI(
@@ -381,6 +437,51 @@ class eViewerApp {
     return promise;
   }
 
+  registerAnnIndicator(callback) {
+    /*
+    (docID, thumbnails) {
+      // docID: ID of the document
+      // thumbnails: Array of thumbnail objects
+      // [{
+      //	  pgNo: 1
+      //	  icon: "BASE64 ENCODED PNG ICON",
+      //	  vLocation: "TOP | CENTER | BOTTOM",
+      //	  hLocation: "LEFT | RIGHT | CENTER",
+      //	  hoverText: "SOME TEXT GOES HERE",
+      //  },
+      //  {
+      //	  pgNo: 2
+      //	  icon: "BASE64 ENCODED PNG ICON",
+      //	  vLocation: "TOP | CENTER | BOTTOM",
+      //	  hLocation: "LEFT | RIGHT | CENTER",
+      //	  hoverText: "SOME TEXT GOES HERE",
+      //  }]
+      
+      thumbnails.foreach((thumbnail) => {
+        thumbnail.icon = "NEW ICON";
+        thumbnail.vLocation = "LEFT | RIGHT | CENTER";
+        thumbnail.hLocation = "LEFT | RIGHT | CENTER";
+        thumbnail.hoverText = "NEW TOOLTIP";
+      });
+    }
+    */
+
+    let inputData = {};
+    inputData.callback = callback;
+
+    let selectedOption = { apiName: "registerAnnIndicator" };
+
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
   getDocumentService() {
     return this.documentService;
   }
@@ -403,6 +504,18 @@ class eViewerApp {
   
   getSignatureService() {
     return this.signatureService;
+  }
+
+  getRedactionService() {
+    return this.redactionService;
+  }
+
+  getIconCacheManagerService() {
+    return this.iconCacheManagerService;
+  }
+
+  getDocMeatDataService() {
+    return this.docMetadataService;
   }
 }
 
@@ -435,6 +548,31 @@ class DocumentService {
     let promise = null;
     new Promise((res, rej) => {
       let reader = new FileReader();
+      if (file[0].type === "" && file[0].name.split(".").pop() === "msg") {
+        reader.readAsArrayBuffer(file[0]);
+        reader.onload = async (events) => {
+          fileURL = events.target.result;
+          inputData.fileUrl = fileURL;
+          window.eViewerComponentReference.zone.run(() => {
+            promise = window.eViewerComponentReference.invokeAPI(
+              selectedOption,
+              inputData
+            );
+          });
+        };
+      } else if (file[0].type === "message/rfc822") {
+        reader.readAsText(file[0]);
+        reader.onloadend = async (events) => {
+          fileURL = events.target.result;
+          inputData.fileUrl = fileURL;
+          window.eViewerComponentReference.zone.run(() => {
+            promise = window.eViewerComponentReference.invokeAPI(
+              selectedOption,
+              inputData
+            );
+          });
+        };
+      } else {
       reader.readAsDataURL(file[0]);
       reader.onload = (events) => {
 		if(options.pageFilters === undefined) {
@@ -443,18 +581,57 @@ class DocumentService {
         fileURL = events.target.result;
         inputData.fileUrl = fileURL;
 		inputData.pageFilters = options.pageFilters;
-        if (
-          file[0].type !== "image/jpeg" &&
-          file[0].type !== "image/png" &&
-          file[0].type !== "image/bmp" &&
-          file[0].type !== "image/gif" // nilesh for Generic_eVewer7_2295 & Generic_eVewer7_2296: Regression APINPM:S1,P1
-        )
+        inputData.captionFiles = options.captionFiles;
+
+        if (file[0].type.includes("video")) {
+          const videoElement = document.createElement("video");
+          videoElement.src = fileURL;
+          videoElement.addEventListener("seeked", () => {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+              context.drawImage(
+                videoElement,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+              );
+            inputData.avWidth = canvas.width;
+            inputData.avHeight = canvas.height;
+            inputData.firstFrameUrl = canvas.toDataURL("image/jpeg");
+
+            window.eViewerComponentReference.zone.run(() => {
+              promise = window.eViewerComponentReference.invokeAPI(
+                selectedOption,
+                inputData
+              );
+            });
+          });
+
+          videoElement.load();
+          videoElement.currentTime = 5;
+        } else if (file[0].type.includes("audio")) {
           window.eViewerComponentReference.zone.run(() => {
             promise = window.eViewerComponentReference.invokeAPI(
               selectedOption,
               inputData
             );
           });
+        } else if (
+          file[0].type !== "image/jpeg" &&
+          file[0].type !== "image/png" &&
+          file[0].type !== "image/bmp" &&
+          file[0].type !== "image/gif" // nilesh for Generic_eVewer7_2295 & Generic_eVewer7_2296: Regression APINPM:S1,P1
+        ) {
+          window.eViewerComponentReference.zone.run(() => {
+            promise = window.eViewerComponentReference.invokeAPI(
+              selectedOption,
+              inputData
+            );
+          });
+		}
         let img = new Image();
         img.onload = () => {
           (width = img.width), (height = img.height);
@@ -476,6 +653,7 @@ class DocumentService {
         };
         img.src = reader.result;
       };
+      }
     });
 
     return await promise;
@@ -525,11 +703,83 @@ class DocumentService {
       if (options.pageFilters === undefined) {
         options.pageFilters = [];
       }
+      if (options.icnData === undefined) {
+        options.icnData = null;
+      }
     }
 
     inputData.options = options;
 
     let selectedOption = { apiName: "loadDocument" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise; // returns "{ viewerDocID: docId, clientDocID: uploadDetail.clientDocID }"
+  }
+
+  loadDocumentWithOptions(docUrl, annotationUrl, clientDocID, options) {
+    /*
+    //optional parameter
+    {
+    isEditMode: true,
+        repoType: "filesystem",
+        password: "",
+        landingPage: this.state.landingPgNo,
+    pageFilters: [{"pageNo": 1, "visible": true}]
+    }
+  */
+    let inputData = {};
+    inputData.docURLs = docUrl;
+    inputData.annURLs = annotationUrl;
+    inputData.clientDocID = clientDocID.toString();
+    inputData.userName = this.userName;
+
+    if (options === undefined) {
+      options = {
+        isEditMode: true,
+        repoType: "filesystem",
+        password: "",
+        landingPage: 1,
+        tabStyle: null,
+        focusTabStyle: null,
+		readOnly: false,
+      };
+    } else {
+      if (options.isEditMode == null) {
+        options.isEditMode = true;
+      } else {
+        options.isEditMode = options.isEditMode;
+      }
+      if (options.repoType == null) {
+        options.repoType = "filesystem";
+      }
+      if (options.password == null) {
+        options.password = "";
+      }
+      if (options.landingPage == null || options.landingPage === "") {
+        options.landingPage = 1;
+      }
+      if (options.pageFilters == null) {
+        options.pageFilters = [];
+      }
+      if (options.tabStyle == null || options.tabStyle === "") {
+        options.tabStyle = null;
+      }
+	  if (options.focusTabStyle == null || options.focusTabStyle === "") {
+	    options.focusTabStyle = null;
+	  }
+	  if (options.readOnly == null || options.readOnly === "") {
+	    options.readOnly = false;
+      }
+    }
+
+    inputData.options = options;
+
+    let selectedOption = { apiName: "loadDocumentWithOptions" };
     let promise = null;
     window.eViewerComponentReference.zone.run(() => {
       promise = window.eViewerComponentReference.invokeAPI(
@@ -710,6 +960,54 @@ class DocumentService {
     inputData.pageNo = pageNo;
 
     let selectedOption = { apiName: "gotoPage" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  invertPages(pageNumbers) {
+    let inputData = {};
+    inputData.pageNo = pageNumbers;
+
+    let selectedOption = { apiName: "invertPages" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  setCustomStamps(customStamps) {
+    let inputData = {};
+    inputData.customStamps = customStamps;
+
+    let selectedOption = { apiName: "setCustomStamps" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  copyToClipboard(pageNumbers) {
+    let inputData = {};
+    inputData.pageNo = pageNumbers;
+
+    let selectedOption = { apiName: "copyToClipboard" };
     let promise = null;
     window.eViewerComponentReference.zone.run(() => {
       promise = window.eViewerComponentReference.invokeAPI(
@@ -961,6 +1259,172 @@ class DocumentService {
 	*/
     return promise;
   }   
+
+  setDocumentTabStyle(viewerDocID, tabStyle, focusTabStyle) {
+    let inputData = {};
+    inputData.viewerDocID = viewerDocID;
+    inputData.tabStyle = tabStyle;
+    inputData.focusTabStyle = focusTabStyle;
+
+    let selectedOption = { apiName: "setDocumentTabStyle" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  getDocumentTabStyle(viewerDocID) {
+    let inputData = {};
+    inputData.viewerDocID = viewerDocID;
+
+    let selectedOption = { apiName: "getDocumentTabStyle" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  setFileName(viewerDocID, fileName) {
+    let inputData = {};
+    inputData.viewerDocID = viewerDocID;
+    inputData.fileName = fileName;
+
+    let selectedOption = { apiName: "setFileName" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  getFileName(viewerDocID) {
+    let inputData = {};
+    inputData.viewerDocID = viewerDocID;
+
+    let selectedOption = { apiName: "getFileName" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  // rajat for Generic_eVewer7_3655: Regression: Multiple Thumbnail Select: S1-P1
+  setSelectedPages(pages) {
+    let inputData = {};
+    inputData.pages = pages;
+
+    let selectedOption = { apiName: "setSelectedPages" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  getSelectedPages(includeCurrentPage) {
+    let inputData = {};
+    inputData.includeCurrentPage = includeCurrentPage;
+
+    let selectedOption = { apiName: "getSelectedPages" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  getSelectedPages() {
+    let inputData = {};
+
+    let selectedOption = { apiName: "getSelectedPages" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  clearSelectedPages() {
+    let inputData = {};
+
+    let selectedOption = { apiName: "clearSelectedPages" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  getPageInfoByRange(docId, pageRange) {
+    let inputData = {};
+
+    inputData.docId = docId;
+    inputData.pageRange = pageRange;
+
+    let selectedOption = { apiName: "getPageInfoByRange" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  setDocumentScrollMode(docId, scrollMode) {
+    let inputData = {};
+
+    inputData.docId = docId;
+    inputData.scrollMode = scrollMode;
+
+    let selectedOption = { apiName: "setDocumentScrollMode" };
+    let promise = null;
+
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
 }
 
 class EditingService {
@@ -1019,6 +1483,52 @@ class EditingService {
 
     return promise;
   }
+
+  rotateCounterClockwise() {
+    let inputData = {};
+
+    let selectedOption = { apiName: "rotateCounterClockwise" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }    
+
+  rotate180() {
+    let inputData = {};
+
+    let selectedOption = { apiName: "rotate180" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  rotateByAngle(angle) {
+    let inputData = {};
+    inputData.angle = angle;
+
+    let selectedOption = { apiName: "rotateByAngle" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }  
 
   zoomTo(preset) {
     let inputData = {};
@@ -1128,6 +1638,36 @@ class EditingService {
     return promise;
   }
   
+  snipArea(options) {
+    let inputData = {};
+    inputData.options = options;
+
+    let selectedOption = { apiName: "snippingTool" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
+  docExportWithOptions(options) {
+    let inputData = {};
+    inputData.options = options;
+
+    let selectedOption = { apiName: "docExportWithOptions" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+
   getCurrentScale(docId) {
     let inputData = {};
     inputData.docId = docId;
@@ -1175,6 +1715,23 @@ class EditingService {
 	*/
     return promise;
   }
+
+  nativeDocumentDownloading(docId, filename) {
+    let inputData = {};
+    inputData.docId = docId;
+    inputData.fileName = filename;
+
+    let selectedOption = { apiName: "downloadDocument" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
 }
 
 class ViewerPreferenceService {
@@ -1204,14 +1761,19 @@ class ViewerPreferenceService {
         saveDocument: true,
         viewComments: true,
         info: true,
+        docMetadata: true,
         settings: {
           userPreferences: true,
           exportDocument: true,
+          download: true,
           print: true,
         },
       },
       rightDocToolbar: {
         pageNavigation: true,
+      },
+      thumbnailToolbar: {
+        popInOut: false,
       },
       ribbonToolbar: [
         {
@@ -1219,6 +1781,8 @@ class ViewerPreferenceService {
           isViewTabVisible: true,
           children: {
             split: true,
+            invert: true,
+            copyPgToClipboard: true,
             undo: true,
             actual: true,
             thumbnailView: true,
@@ -1236,6 +1800,8 @@ class ViewerPreferenceService {
             checkpoint: true,
             appendDocument: true,
             watermark: true,
+            snippingTool: true,
+			trimPage: true,
           },
         },
         {
@@ -1267,6 +1833,8 @@ class ViewerPreferenceService {
             searchRedact: true,
             clearRedaction: true,
             redactViewMode: true,
+            redactPage: true,
+            redactSelectText: true,
           },
         },
 		{
@@ -1276,6 +1844,37 @@ class ViewerPreferenceService {
             drawSignature: true,
           },
         },
+        {
+          name: "Speech",
+          isSpeechTabVisible: true,
+          children: {
+            previousPageSpeech: true,
+            play: true,
+            pause: true,
+            stop: true,
+            nextPageSpeech: true,
+            speechSpeed: true,
+          },
+        },
+		{
+			name: "Compare",
+			isCompareTabVisible: true,
+			children: {
+				comparedocsView: true,
+				startSync: true,
+				closeCompareDocuments: true,
+                comparePanel: true,
+          },
+        },
+		{
+          name: "Medify",
+          isMedifyTabVisible: false,
+          children: {
+            addSnapshot: true,
+            openSnapshotAsNewDocument: true,
+            enableDisableCommentSubtitle: true,
+          },		
+		},
       ],
       general: {
         view: "pageView",
@@ -1286,11 +1885,47 @@ class ViewerPreferenceService {
         selectedOption: "info",
         isOcrEnabled: false,
         firstChunkSize: 1,
+        cacheManagerSize: 20,
+        waitTime: 5,
         annComments: true,
         showDocThumbBar: true,
 		showDocSignPanel: true,
         autogrowDocTabWidth: false,
 		embedAnnotationOnStamping: true,
+        enablePDFLockAfterSigning: false,
+        pdfFlattening: false,
+        thumbnailZoomControls: true,
+		redactInJSON: true,
+		saveOnlyIfModified: false,
+      },
+      docTabPreferences: {
+        focusTabStyle: {
+          backgroundColor: "#0853B5",
+          color: "#fff",
+          fontWeight: "400",
+          fontStyle: "normal",
+          fileName: "",
+          icon: "",
+        },
+        tabStyle: {
+          backgroundColor: "#f7f7f7",
+          color: "#4B5658",
+          fontWeight: "400",
+          fontStyle: "normal",
+          fileName: "",
+          icon: "",
+        },
+      },
+      compareDocsPreference: {
+        detailPreference: {
+          fullDetail: false,
+        },
+        displayPreference: {
+          textInfo: true,
+          imageInfo: false,
+          graphicsInfo: false,
+          annotInfo: false,
+        },
       },
       commentStatus: [
         {
@@ -1359,12 +1994,12 @@ class ViewerPreferenceService {
           title: "Last Page",
         },
         {
-          key: "Alt+PAGEUP",
+          key: "ARROWUP",
           command: "previouspage",
           title: "Previous Page",
         },
         {
-          key: "Alt+PAGEDOWN",
+          key: "ARROWDOWN",
           command: "nextpage",
           title: "Next Page",
         },
@@ -1549,7 +2184,7 @@ class ViewerPreferenceService {
         fillColor: "#96FEFE",
         fontSize: "0",
         height: "0",
-        opacity: "1.0",
+        opacity: "0.5",
         strokeColor: "#FF0000",
         type: "0",
         userType: "0",
@@ -1859,11 +2494,11 @@ class WatermarkService {
 	this.userName = userName;
   }
 
-  newWatermark(properties) {
+  addWatermark(properties) {
     let inputData = {};
     inputData.properties = properties;
 
-    let selectedOption = { apiName: "newWatermark" };
+    let selectedOption = { apiName: "addWatermark" };
     let promise = null;
     window.eViewerComponentReference.zone.run(() => {
       promise = window.eViewerComponentReference.invokeAPI(
@@ -1875,8 +2510,36 @@ class WatermarkService {
     return promise;
   }
 
-  addWatermark(name, docId, pages) {
-    return "Not Implemented";
+  editWatermark(properties) {
+    let inputData = {};
+    inputData.properties = properties;
+
+    let selectedOption = { apiName: "editWatermark" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  deleteWatermark(watermarkId) {
+    let inputData = {};
+    inputData.watermarkId = watermarkId;
+
+    let selectedOption = { apiName: "deleteWatermark" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
   }
 }
 
@@ -2102,6 +2765,21 @@ class AnnotationService {
     return promise;
   }
 
+  drawLinkAnnotation(annId, options) {
+    let inputData = {};
+    inputData.annId = annId;
+    inputData.options = options;
+
+    let selectedOption = { apiName: "linkAnnotation" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+  }
+
   updateCommentOrReply(annId, textUpdate, replyId) {
     let inputData = {};
     inputData.annId = annId;
@@ -2220,6 +2898,49 @@ class AnnotationService {
   }
 }
 
+class IconCacheManagerService {
+  constructor(userName) {
+    this.userName = userName;
+  }
+
+  setUserName(userName) {
+    if (userName === undefined || userName === "") {
+      userName = "Administrator";
+    }
+    this.userName = userName;
+  }
+
+  invalidateThumbnailIconForPages(options) {
+    let inputData = {};
+    inputData.options = options;
+
+    let selectedOption = { apiName: "invalidateThumbnailIconForPages" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  getCacheInfo() {
+    let inputData = {};
+
+    let selectedOption = { apiName: "getCacheInfo" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+    return promise;
+  }
+}
+
 class SignatureService {
 	constructor(userName) {
 	  this.userName = userName;
@@ -2271,57 +2992,161 @@ class SignatureService {
 	}
 }
 
-//class RedactionService {
-//
-//	clearRedaction() {
-//	}
-//	
-//	/*
-//	redactMode: "redact or normal"
-//	*/
-//	switchRedactView(redactMode) {
-//		return new Promise(reject, resolve) {
-//			resolve(true);
-//		};
-//	}
-//	
-//	getRedactionTags() {
-//		return new Promise(reject, resolve) {
-//			resolve(["Confidential", "Prohibited"]);
-//		};
-//	}
-	
-//	/*
-//	rects[]: An array of redaction objects
-//	redaction object: { rect: [x, y, width, height], page: 1, tag: "" }
-//	*/	
-//	redactRect(rects) {
-//		return new Promise(reject, resolve) {
-//			resolve(true);
-//		};
-//	}
-//	
-//	getExpressions() {
-//		return new Promise(reject, resolve) {
-//			resolve({PII: ["", ""]});
-//		};		
-//	}
-//	
-//	/*
-//	expression: { "label": "", expression: ""} 
-//	*/	
-//	redactExpression(expression) {
-//		return new Promise(reject, resolve) {
-//			resolve(true);
-//		};	
-//	}
-//	
-//	/*
-//	word: ""
-//	*/
-//	redactWord(word) {
-//		return new Promise(reject, resolve) {
-//			resolve(true);
-//		};			
-//	}
-//}
+class RedactionService {
+  drawRedaction(pageRange, position, options) {
+    let inputData = {};
+    inputData.pageRange = pageRange;
+    inputData.options = options;
+    inputData.position = position;
+    let selectedOption = { apiName: "drawRedaction" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  redactWord(redactWord, options) {
+    let inputData = {};
+    inputData.redactWord = redactWord;
+    inputData.options = options;
+    let selectedOption = { apiName: "redactWord" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  clearRedaction(pageRange) {
+    let inputData = {};
+    inputData.pageRange = pageRange;
+    let selectedOption = { apiName: "clearRedaction" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  redactExpressions(expressions, selectedTag) {
+    let inputData = {};
+    inputData.expressions = expressions;
+    inputData.selectedTag = selectedTag;
+    let selectedOption = { apiName: "redactByExpression" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  getDetails(pageRange) {
+    let inputData = {};
+    inputData.pageRange = pageRange;
+    let selectedOption = { apiName: "getRedactionDetails" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  switchRedactViewMode() {
+    let inputData = {};
+    let selectedOption = { apiName: "redactViewMode" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  setUserName(userName) {
+    if (userName === undefined || userName === "") {
+      userName = "Administrator";
+    }
+    this.userName = userName;
+  }
+}
+
+class DocMetadataService {
+  constructor(userName) {
+    this.userName = userName;
+  }
+
+  setUserName(userName) {
+    if (userName === undefined || userName === "") {
+      userName = "Administrator";
+    }
+    this.userName = userName;
+  }
+
+  setMetaData(data) {
+    let inputData = {};
+    inputData.data = data;
+    let selectedOption = { apiName: "setMetaData" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  getMetaData() {
+    let inputData = {};
+    let selectedOption = { apiName: "getMetaData" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+
+  getAllMetaData(data) {
+    let inputData = {};
+    inputData.data = data;
+    let selectedOption = { apiName: "getAllMetaData" };
+    let promise = null;
+    window.eViewerComponentReference.zone.run(() => {
+      promise = window.eViewerComponentReference.invokeAPI(
+        selectedOption,
+        inputData
+      );
+    });
+
+    return promise;
+  }
+}
